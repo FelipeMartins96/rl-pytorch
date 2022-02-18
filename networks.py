@@ -1,46 +1,47 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import copy
-
-
-class DDPGActor(nn.Module):
-    def __init__(self, obs_size, act_size):
-        super(DDPGActor, self).__init__()
-
-        self.net = nn.Sequential(
-            nn.Linear(obs_size, 400),
-            nn.ReLU(),
-            nn.Linear(400, 300),
-            nn.ReLU(),
-            nn.Linear(300, act_size),
-            nn.Tanh()
-        )
-
-    def forward(self, x):
-        return self.net(x)
-    
-    def get_action(self, x):
-        return self.net(x).detach().cpu().numpy()
 
 
 class DDPGCritic(nn.Module):
     def __init__(self, obs_size, act_size):
         super(DDPGCritic, self).__init__()
-
-        self.obs_net = nn.Sequential(
-            nn.Linear(obs_size, 400),
-            nn.ReLU(),
-        )
-
-        self.out_net = nn.Sequential(
-            nn.Linear(400 + act_size, 300),
-            nn.ReLU(),
-            nn.Linear(300, 1)
-        )
+        self.fc1 = nn.Linear(obs_size+act_size, 512)
+        self.fc2 = nn.Linear(512, 512)
+        self.fc3 = nn.Linear(512, 1024)
+        self.fc4 = nn.Linear(1024, 512)
+        self.fc5 = nn.Linear(512, 512)
+        self.fc6 = nn.Linear(512, 1)
 
     def forward(self, x, a):
-        obs = self.obs_net(x)
-        return self.out_net(torch.cat([obs, a], dim=1))
+        x = torch.cat([x, a], 1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        x = self.fc6(x)
+        return x
+
+
+class DDPGActor(nn.Module):
+    def __init__(self, obs_size, act_size):
+        super(DDPGActor, self).__init__()
+        self.fc1 = nn.Linear(obs_size, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, 512)
+        self.fc4 = nn.Linear(512, 512)
+        self.fc5 = nn.Linear(512, 256)
+        self.fc_mu = nn.Linear(256, act_size)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        return torch.tanh(self.fc_mu(x))
 
 
 class TargetNet:

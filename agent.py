@@ -51,7 +51,7 @@ class DDPG:
         actor_loss = pi_loss_v.cpu().detach().numpy()
 
         # Sync target networks
-        self.tgt_actor.sync(alpha=1 - 1e-3)
-        self.tgt_critic.sync(alpha=1 - 1e-3)
+        self.tgt_actor.sync(alpha=1 - 0.005)
+        self.tgt_critic.sync(alpha=1 - 0.005)
 
         return critic_loss, actor_loss
