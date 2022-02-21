@@ -12,6 +12,8 @@ import time
 
 
 def main(args):
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    print(f'{device=}')
     total_training_steps = (
         args.training_total_training_steps + args.training_replay_min_size
     )
@@ -26,9 +28,9 @@ def main(args):
     env.seed(seed)
 
 
-    agent = DDPG(env.observation_space, env.action_space, learning_rate, gamma)
+    agent = DDPG(env.observation_space, env.action_space, learning_rate, gamma, device)
 
-    buffer = ReplayBuffer(env.observation_space, env.action_space, replay_capacity)
+    buffer = ReplayBuffer(env.observation_space, env.action_space, replay_capacity, device)
 
     obs = env.reset()
     for step in tqdm(range(total_training_steps), smoothing=0.01):

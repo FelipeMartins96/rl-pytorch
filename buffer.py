@@ -5,7 +5,7 @@ import torch
 class ReplayBuffer:
     """Circular replay buffer for gym environments transitions"""
 
-    def __init__(self, env_observation_space, env_action_space, capacity):
+    def __init__(self, env_observation_space, env_action_space, capacity, device):
         """Initialize a replay buffer for the given environment.
 
         Args:
@@ -16,6 +16,8 @@ class ReplayBuffer:
         # Tests
         assert isinstance(env_observation_space, spaces.Box)
         assert isinstance(env_action_space, spaces.Box)
+
+        self.device = device
 
         self._capacity = capacity
         self._num_added = 0
@@ -50,11 +52,11 @@ class ReplayBuffer:
         batch_indices = np.random.randint(0, self.size, size=batch_size)
 
         return (
-            torch.Tensor(self._observations[batch_indices]),
-            torch.Tensor(self._actions[batch_indices]),
-            torch.Tensor(self._rewards[batch_indices]),
-            torch.Tensor(self._dones[batch_indices]),
-            torch.Tensor(self._next_observations[batch_indices]),
+            torch.Tensor(self._observations[batch_indices]).to(self.device),
+            torch.Tensor(self._actions[batch_indices]).to(self.device),
+            torch.Tensor(self._rewards[batch_indices]).to(self.device),
+            torch.Tensor(self._dones[batch_indices]).to(self.device),
+            torch.Tensor(self._next_observations[batch_indices]).to(self.device),
         )
 
     @property

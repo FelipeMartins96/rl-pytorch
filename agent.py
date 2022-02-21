@@ -4,16 +4,21 @@ import torch
 import torch.nn.functional as F
 
 class DDPG:
-    def __init__(self, obs_space, action_space, lr, gamma):
+    def __init__(self, obs_space, action_space, lr, gamma, device):
         obs_size, act_size = obs_space.shape[0], action_space.shape[0]
-        self.actor = DDPGActor(obs_size, act_size)
-        self.tgt_actor = TargetActor(self.actor)
+
+        self.actor = DDPGActor(obs_size, act_size).to(device)
+        self.critic = DDPGCritic(obs_size, act_size).to(device)
+        self.tgt_actor = DDPGActor(obs_size, act_size).to(device)
+        self.tgt_critic = DDPGCritic(obs_size, act_size).to(device)
+        self.tgt_actor.load_state_dict(self.actor.state_dict())
+        self.tgt_critic.load_state_dict(self.critic.state_dict())
         self.actor_optim = torch.optim.Adam(self.actor.parameters(), lr=lr)
-        self.critic = DDPGCritic(obs_size, act_size)
-        self.tgt_critic = TargetCritic(self.critic)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=lr)
+
         self.gamma = gamma
         self.sigma = 0.2
+        self.tau = 0.005
 
         pass
 
@@ -51,7 +56,9 @@ class DDPG:
         actor_loss = pi_loss_v.cpu().detach().numpy()
 
         # Sync target networks
-        self.tgt_actor.sync(alpha=1 - 0.005)
-        self.tgt_critic.sync(alpha=1 - 0.005)
+        for param, target_param in zip(self.actor.parameters(), self.tgt_actor.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        for param, target_param in zip(self.critic.parameters(), self.tgt_critic.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         return critic_loss, actor_loss
