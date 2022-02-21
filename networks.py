@@ -7,41 +7,49 @@ import copy
 class DDPGCritic(nn.Module):
     def __init__(self, obs_size, act_size):
         super(DDPGCritic, self).__init__()
-        self.fc1 = nn.Linear(obs_size+act_size, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, 1024)
-        self.fc4 = nn.Linear(1024, 512)
-        self.fc5 = nn.Linear(512, 512)
-        self.fc6 = nn.Linear(512, 1)
+        self.obs_net = nn.Sequential(
+            nn.Linear(obs_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1024),
+            nn.ReLU(),
+        )
+
+        self.out_net = nn.Sequential(
+            nn.Linear(1024 + act_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1),
+        )
 
     def forward(self, x, a):
+        x = self.obs_net(x)
         x = torch.cat([x, a], 1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
-        x = self.fc6(x)
-        return x
+        return self.out_net(x)
 
 
 class DDPGActor(nn.Module):
     def __init__(self, obs_size, act_size):
         super(DDPGActor, self).__init__()
-        self.fc1 = nn.Linear(obs_size, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, 512)
-        self.fc4 = nn.Linear(512, 512)
-        self.fc5 = nn.Linear(512, 256)
-        self.fc_mu = nn.Linear(256, act_size)
+        self.net = nn.Sequential(
+            nn.Linear(obs_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, act_size),
+            nn.Tanh(),
+        )
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
-        return torch.tanh(self.fc_mu(x))
+        return torch.tanh(self.net(x))
 
 
 class TargetNet:
