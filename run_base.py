@@ -12,7 +12,7 @@ import time
 
 
 def main(args):
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'{device=}')
     total_training_steps = (
         args.training_total_training_steps + args.training_replay_min_size
