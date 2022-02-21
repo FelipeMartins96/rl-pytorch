@@ -35,7 +35,7 @@ def main(args):
     obs = env.reset()
     for step in tqdm(range(total_training_steps), smoothing=0.01):
         with torch.no_grad():
-            action = agent.sample_action(torch.Tensor(obs))
+            action = agent.sample_action(torch.Tensor(obs).to(device))
             _obs, reward, done, info = env.step(action)
             terminal_state = False if not done or "TimeLimit.truncated" in info else True
             buffer.add(obs, action, 0.0, reward, terminal_state, _obs)
